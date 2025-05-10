@@ -1,0 +1,4 @@
+# exclude Rust build artifacts
+./target
+./crates/wasm/pkg/
+./crates/wasm-test-runner/static/generated/
