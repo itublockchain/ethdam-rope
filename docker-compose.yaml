@@ -5,9 +5,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: dam:latest
+    image: docker.io/feyyum/dam:latest
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    platform: linux/amd64
