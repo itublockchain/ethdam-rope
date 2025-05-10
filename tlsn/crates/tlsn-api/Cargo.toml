@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-actix-web = "4"
+serde = { version = "1.0", features = ["derive"] }
+actix-web = "4.10.2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 log = "0.4"
 env_logger = "0.10"

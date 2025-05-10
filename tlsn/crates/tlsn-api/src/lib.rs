@@ -1,17 +1,41 @@
 use std::process::Command;
-use actix_web::{get, App, HttpResponse, HttpServer};
+
+use actix_web::{post, web, App, HttpResponse, HttpServer};
+use serde::Deserialize;
 use log::{error, info};
 
-/// Executes a cargo example command and returns the command's stdout on success,
-/// or stderr on failure.
-async fn execute_example(example: &str) -> Result<String, String> {
+/// Body’den gelen parametreleri temsil eder.
+/// Eğer hiçbir body gelmezse Default impl devreye girer.
+
+#[derive(Deserialize, Debug)]
+struct RunParams {
+    domain: String,
+    path: String,
+    reveals: String,
+}
+
+impl Default for RunParams {
+    fn default() -> Self {
+        RunParams {
+            domain: "dummyjson.com".into(),
+            path: "/test".into(),
+            reveals: "status".into(),
+        }
+    }
+}
+
+/// `cargo run --release --example <example>` komutunu parametreye göre çalıştırır.
+/// Başarıysa stdout’u, başarısızsa stderr’i döner.
+async fn execute_example(example: &str, params: &RunParams) -> Result<String, String> {
     let mut cmd = Command::new("cargo");
     cmd.current_dir("../")
-       .env("SERVER_PORT", "4000")
-       .env("domain", "dummyjson.com")
-       .env("path", "/test")
-       .env("reveals", "status")
-       .args(&["run", "--release", "--example", example]);
+        // Dinamik olarak body’den gelen değerleri set ediyoruz:
+        .env("SERVER_DOMAIN", &params.domain)
+        .env("SERVER_PATH", &params.path)
+        .env("REVEALS", &params.reveals)
+        // Sabit port da burada kalabilir:
+        .env("SERVER_PORT", "4000")
+        .args(&["run", "--release", "--example", example]);
 
     match cmd.output() {
         Ok(output) => {
@@ -22,7 +46,10 @@ async fn execute_example(example: &str) -> Result<String, String> {
                 Ok(stdout)
             } else {
                 let code = output.status.code().unwrap_or(-1);
-                error!("Example '{}' exited with code {}. Stderr: {}", example, code, stderr);
+                error!(
+                    "Example '{}' exited with code {}. Stderr: {}",
+                    example, code, stderr
+                );
                 Err(stderr)
             }
         }
@@ -33,30 +60,43 @@ async fn execute_example(example: &str) -> Result<String, String> {
     }
 }
 
-/// Endpoint to generate an attestation proof via the 'attestation_prove' example.
-#[get("/prove")]
-async fn prove_endpoint() -> HttpResponse {
-    match execute_example("attestation_prove").await {
-        Ok(output) => HttpResponse::Ok().body(format!("PROVE completed successfully:\n{}", output)),
-        Err(err) => HttpResponse::InternalServerError().body(format!("PROVE failed:\n{}", err)),
+/// Eğer istemci JSON body göndermediyse `params = None` olur ve `RunParams::default()` kullanılır.
+#[post("/prove")]
+async fn prove_endpoint(params: Option<web::Json<RunParams>>) -> HttpResponse {
+    let params = params
+        .map(|j| j.into_inner())
+        .unwrap_or_default();
+
+    match execute_example("attestation_prove", &params).await {
+        Ok(out) => HttpResponse::Ok().body(format!("PROVE completed successfully:\n{}", out)),
+        Err(err) => HttpResponse::InternalServerError()
+            .body(format!("PROVE failed:\n{}", err)),
     }
 }
 
-/// Endpoint to present an attestation via the 'attestation_present' example.
-#[get("/present")]
-async fn present_endpoint() -> HttpResponse {
-    match execute_example("attestation_present").await {
-        Ok(output) => HttpResponse::Ok().body(format!("PRESENT completed successfully:\n{}", output)),
-        Err(err) => HttpResponse::InternalServerError().body(format!("PRESENT failed:\n{}", err)),
+#[post("/present")]
+async fn present_endpoint(params: Option<web::Json<RunParams>>) -> HttpResponse {
+    let params = params
+        .map(|j| j.into_inner())
+        .unwrap_or_default();
+
+    match execute_example("attestation_present", &params).await {
+        Ok(out) => HttpResponse::Ok().body(format!("PRESENT completed successfully:\n{}", out)),
+        Err(err) => HttpResponse::InternalServerError()
+            .body(format!("PRESENT failed:\n{}", err)),
     }
 }
 
-/// Endpoint to verify an attestation via the 'attestation_verify' example.
-#[get("/verify")]
-async fn verify_endpoint() -> HttpResponse {
-    match execute_example("attestation_verify").await {
-        Ok(output) => HttpResponse::Ok().body(format!("VERIFY completed successfully:\n{}", output)),
-        Err(err) => HttpResponse::InternalServerError().body(format!("VERIFY failed:\n{}", err)),
+#[post("/verify")]
+async fn verify_endpoint(params: Option<web::Json<RunParams>>) -> HttpResponse {
+    let params = params
+        .map(|j| j.into_inner())
+        .unwrap_or_default();
+
+    match execute_example("attestation_verify", &params).await {
+        Ok(out) => HttpResponse::Ok().body(format!("VERIFY completed successfully:\n{}", out)),
+        Err(err) => HttpResponse::InternalServerError()
+            .body(format!("VERIFY failed:\n{}", err)),
     }
 }
 
