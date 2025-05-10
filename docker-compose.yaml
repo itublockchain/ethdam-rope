@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  dam:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: dam:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
