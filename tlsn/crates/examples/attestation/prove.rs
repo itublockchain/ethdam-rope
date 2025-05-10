@@ -18,7 +18,6 @@ use tlsn_core::{request::RequestConfig, transcript::TranscriptCommitConfig};
 use tlsn_core::CryptoProvider;
 use tlsn_formats::http::{DefaultHttpCommitter, HttpCommit, HttpTranscript};
 use tlsn_prover::{Prover, ProverConfig};
-use tlsn_server_fixture::DEFAULT_FIXTURE_PORT;
 use tracing::debug;
 
 use clap::Parser;
@@ -27,12 +26,18 @@ use clap::Parser;
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
 
 // const SERVER_DOMAIN: &str = "http://api.weatherstack.com/current?access_key=8185e29c2ab27a7888ad2426e4d730f8&query=Amsterdam";
-/// Only the host name for TLS handshake
-const SERVER_DOMAIN: &str = "dummyjson.com";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// Sunucu domain adı (örn. example.com)
+    #[clap(long, default_value = "dummyjson.com")]
+    domain: String,
+
+    /// URI path/uzantısı (örn. /formats/json)
+    #[clap(long, default_value = "/test")]
+    path: String,
+
     /// What data to notarize
     #[clap(default_value_t, value_enum)]
     example_type: ExampleType,
@@ -42,20 +47,23 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    let server_domain = args.domain.clone();
+
     let (uri, extra_headers) = match args.example_type {
         // ExampleType::Json => ("/formats/json", vec![]),
-        ExampleType::Json => ("/test", vec![]),
+        ExampleType::Json => (args.path.as_str(), vec![]),
         ExampleType::Html => ("/formats/html", vec![]),
         ExampleType::Authenticated => ("/protected", vec![("Authorization", "random_auth_token")]),
     };
 
-    notarize(uri, extra_headers, &args.example_type).await
+    notarize(uri, extra_headers, &args.example_type, &server_domain).await
 }
 
 async fn notarize(
     uri: &str,
     extra_headers: Vec<(&str, &str)>,
     example_type: &ExampleType,
+    server_domain: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
@@ -65,7 +73,7 @@ async fn notarize(
         .unwrap_or(7047);
     // Default to the TLS server domain if SERVER_HOST is not set
     let server_host: String = env::var("SERVER_HOST")
-        .unwrap_or_else(|_| SERVER_DOMAIN.to_string());
+        .unwrap_or_else(|_| server_domain.to_string());
     // Default to 443 if SERVER_PORT is not set
     let server_port: u16 = env::var("SERVER_PORT")
         .map(|port| port.parse().expect("port should be valid integer"))
@@ -103,7 +111,7 @@ async fn notarize(
     // Set up protocol configuration for prover.
     // Prover configuration.
     let prover_config = ProverConfig::builder()
-        .server_name(SERVER_DOMAIN)
+        .server_name(server_domain)
         .protocol_config(
             ProtocolConfig::builder()
                 // We must configure the amount of data we expect to exchange beforehand, which will
@@ -123,7 +131,7 @@ async fn notarize(
         .await?;
 
     // Open a TCP connection to the server.
-    let client_socket = tokio::net::TcpStream::connect((SERVER_DOMAIN, 443)).await?;
+    let client_socket = tokio::net::TcpStream::connect((server_domain, 443)).await?;
 
     // Bind the prover to the server connection.
     // The returned `mpc_tls_connection` is an MPC TLS connection to the server: all
@@ -145,8 +153,8 @@ async fn notarize(
     // Build a simple HTTP request with common headers
     let request_builder = Request::builder()
         // .uri(uri)
-        .uri(format!("https://{}{}", SERVER_DOMAIN, uri))
-        .header("Host", SERVER_DOMAIN)
+        .uri(format!("https://{}{}", server_domain, uri))
+        .header("Host", server_domain)
         .header("Accept", "*/*")
         // Using "identity" instructs the Server not to use compression for its HTTP response.
         // TLSNotary tooling does not support compression.

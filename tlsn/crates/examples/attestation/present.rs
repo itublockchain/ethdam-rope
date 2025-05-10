@@ -12,6 +12,10 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// Reveal the following fields in the presentation. The default is to reveal
+    #[clap(long, value_delimiter = ',', default_values = ["status"])]
+    reveals: Vec<String>,
+
     /// What data to notarize
     #[clap(default_value_t, value_enum)]
     example_type: ExampleType,
@@ -20,11 +24,10 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-
-    create_presentation(&args.example_type).await
+    create_presentation(&args.example_type, &args.reveals).await
 }
 
-async fn create_presentation(example_type: &ExampleType) -> Result<(), Box<dyn std::error::Error>> {
+async fn create_presentation(example_type: &ExampleType, reveals: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let attestation_path = tlsn_examples::get_file_path(example_type, "attestation");
     let secrets_path = tlsn_examples::get_file_path(example_type, "secrets");
 
@@ -84,7 +87,12 @@ async fn create_presentation(example_type: &ExampleType) -> Result<(), Box<dyn s
                 // builder.reveal_recv(json.get("id").unwrap())?;
                 // builder.reveal_recv(json.get("information.name").unwrap())?;
                 // builder.reveal_recv(json.get("meta.version").unwrap())?;
-                builder.reveal_recv(json.get("status").unwrap())?;
+
+                for field in reveals {
+                    let val = json.get(field)
+                        .unwrap_or_else(|| panic!("Beklenen alan bulunamadı: {}", field));
+                    builder.reveal_recv(val)?;
+                }
             }
         }
         tlsn_formats::http::BodyContent::Unknown(span) => {

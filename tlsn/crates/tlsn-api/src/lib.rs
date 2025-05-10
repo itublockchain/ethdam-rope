@@ -8,6 +8,9 @@ async fn execute_example(example: &str) -> Result<String, String> {
     let mut cmd = Command::new("cargo");
     cmd.current_dir("../")
        .env("SERVER_PORT", "4000")
+       .env("domain", "dummyjson.com")
+       .env("path", "/test")
+       .env("reveals", "status")
        .args(&["run", "--release", "--example", example]);
 
     match cmd.output() {
