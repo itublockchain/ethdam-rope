@@ -1,3 +1,6 @@
+![image](https://github.com/user-attachments/assets/6aa00510-9ad1-4f44-bd7d-3ee7b3fd6bb0)
+
+
 # RØPE - Reliable Over Protocol Exchange
 
 *RØPE* is a trust-minimized, verifiable on/offramp between Web2 payments and Web3 assets. It connects traditional fiat systems to crypto networks without relying on centralized intermediaries or manual confirmation.
