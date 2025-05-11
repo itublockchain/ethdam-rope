@@ -222,23 +222,14 @@ export class WalletService {
             
             console.log(`${amount} USDC gönderiliyor: ${account.address} adresinden ${toAddress} adresine`);
             
-            // Nonce değerini al
-            const nonce = await publicClient.getTransactionCount({
-                address: account.address,
-            });
-            
-            // Gas fiyatını hesapla (mevcut fiyatın %20 üzerine çıkar)
-            const gasPrice = await publicClient.getGasPrice();
-            const increasedGasPrice = gasPrice * BigInt(120) / BigInt(100); // %20 artış
-            
-            // USDC transfer işlemini gerçekleştir
             const hash = await contract.write.transfer(
-                [toAddress as `0x${string}`, amountInWei],
+                [
+                    toAddress as `0x${string}`,
+                    amountInWei
+                ],
                 {
-                    nonce: nonce,
-                    gasPrice: increasedGasPrice,
-                    maxPriorityFeePerGas: undefined, // Type-2 işlemleri için uyumluluk
-                    maxFeePerGas: undefined,        // Type-2 işlemleri için uyumluluk
+                    maxFeePerGas: parseUnits("50", 9), 
+                    maxPriorityFeePerGas: parseUnits("2", 9) 
                 }
             );
             
