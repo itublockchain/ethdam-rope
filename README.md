@@ -24,7 +24,7 @@ This proof feeds directly into the flow and ensures that the payment actually ha
 
 Meanwhile, your sensitive information — wallet addresses, access credentials — is protected on-chain using *Sapphire* and *Oasis Privacy Layer (OPL)*.
 
-Once the payment is verified, the agent — running securely inside a TEE using *ROFL* — triggers the crypto side of the transaction. It interacts with services like *Modulr* (or Wise), and *Uniswap* to perform the onramp, swap or bridge. And then the equivalent asset — say, *USDC* — lands directly in your wallet on *Base*, or any supported chain and token.
+Once the payment is verified, the agent — running securely inside a TEE using *ROFL* — triggers the crypto side of the transaction. It interacts with services like *Modulr* (or Wise), and *Uniswap* to perform the onramp, swap or bridge. And then the equivalent asset — say, *USDC* — lands directly in your wallet on any supported chain and token.
 
 ---
 
@@ -45,36 +45,35 @@ This isn’t an escrow. It’s not a swap platform. It’s a verifiable automati
 •⁠  ⁠*zkTLS / TLSNotary* – Fiat payment verification
 •⁠  ⁠*Sapphire & OPL* – Privacy-preserving storage and computation
 •⁠  ⁠*Modulr / Wise* – Fiat input
-•⁠  ⁠*Uniswap / LI.FI / CCTP* – Swap & bridge layer
-•⁠  ⁠*Base* – Onchain delivery (USDC)
+•⁠  CCTP – Onchain delivery (USDC)
 
 ---
 
 ## 🧪 What We Built
 
 •⁠  ⁠End-to-end demo flow with live payment simulation
-•⁠  ⁠zkTLS verification pipeline
+•⁠  TLSNotary verification pipeline
 •⁠  ⁠MCP agent architecture & orchestration
 •⁠  ⁠TEE computation with ROFL
-•⁠  ⁠Private data integration with Sapphire/OPL
-•⁠  ⁠USDC delivery on Base
+•⁠  ⁠Private data integration with OPL(Sapphire)
+•⁠  ⁠USDC delivery on multiple chains
 
 ---
 
 ## 📥 Installation
 
-# 1. Clone the repository
+### 1. Clone the repository
 git clone https://github.com/itublockchain/ethdam-rope
 cd rope
 
-# 2. Build Docker images and start all services
+### 2. Build Docker images and start all services
 docker-compose build
 docker-compose up -d
 
-# 3. Add MCP server to your local machine
+### 3. Add MCP server to your local machine
 You can follow [Antrophic's documentation](https://modelcontextprotocol.io/quickstart/user).
 
-# 4. (Optional) Follow logs
+### 4. (Optional) Follow logs
 docker-compose logs -f
 
 ## 📄 License
