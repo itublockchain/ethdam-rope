@@ -2,9 +2,28 @@ import express from 'express';
 import cors from 'cors';
 import bankRoutes from './routes/bank.routes';
 import walletRoutes from './routes/wallet.routes';
+import axios from 'axios';
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+//Rofl Key Generation for both enviroments
+/*
+let PRIVATE_KEY = "";
+axios.post('http://localhost:3000/rofl/v1/keys/generate', {
+  "key_id": "wallet key",
+  "kind": "secp256k1"
+}).then((res) => {
+  PRIVATE_KEY = res.data.key;
+}).catch(err => {
+  PRIVATE_KEY = process.env.PRIVATE_KEY as string;
+  console.error('Error generating wallet private key:', err);
+});
+
+
+export const WALLET_PRIVATE_KEY = PRIVATE_KEY;
+*/
+
 
 // Middleware
 app.use(cors());
