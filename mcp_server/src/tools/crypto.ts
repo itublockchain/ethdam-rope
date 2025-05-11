@@ -21,7 +21,7 @@ export function registerCryptoTools(server: McpServer) {
 
   server.tool(
     "buy-crypto-with-fiat",
-    "Convert fiat currency to cryptocurrency by verifying bank transfer and sending crypto",
+    "Convert fiat currency to cryptocurrency by verifying bank transfer and sending crypto. Gives required parameters as a list",
     {
       amount: z.number().positive().describe("Amount in USD to convert to cryptocurrency"),
       bankAccountNumber: z.string().describe("Bank account number where fiat transfer was made from. Important: It is from user."),

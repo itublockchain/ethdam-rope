@@ -5,7 +5,7 @@ import { config } from '../config';
 
 export function registerBankTools(server: McpServer) {
   server.tool("get-bank-info",
-    "Gives bank account information for buying crypto with fiat",
+    "Gives bank account information for buying crypto with fiat. Gives it as a list",
     async () => {
       const response = await axios.get(`${config.API_BASE_URL}/bank/bank-account-info`);
       return {
