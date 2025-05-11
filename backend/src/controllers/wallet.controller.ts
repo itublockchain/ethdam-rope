@@ -24,7 +24,7 @@ export class WalletController {
 
     public sendUSDC = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { toAddress, amount } = req.body;
+            const { toAddress, amount, chain } = req.body;
             
             if (!toAddress || !amount) {
                 res.status(400).json({ 
@@ -34,7 +34,7 @@ export class WalletController {
                 return;
             }
 
-            const hash = await this.walletService.send(toAddress, amount);
+            const hash = await this.walletService.send(toAddress, amount, chain);
             res.status(200).json({ 
                 success: true,
                 transactionHash: hash

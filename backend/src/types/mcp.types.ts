@@ -4,4 +4,5 @@ export interface TransactionRequest {
     walletAddress: string;
     name?: string;
     sortCode?: string;
+    chain?: string;
 }

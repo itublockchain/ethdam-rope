@@ -1,6 +1,6 @@
-import { createPublicClient, createWalletClient, http, parseUnits, getContract } from 'viem';
+import { createPublicClient, createWalletClient, http, parseUnits, getContract, Chain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { sepolia } from 'viem/chains';
+import { sepolia, avalancheFuji, arbitrumSepolia, baseSepolia, lineaSepolia } from 'viem/chains';
 import { TransactionRequest } from '../types/mcp.types';
 import BankService from './bank.service';
 import dotenv from 'dotenv';
@@ -8,9 +8,26 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export class WalletService {
-    // Private key olarak tanımlanıyor
+
     private PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY as `0x${string}`;
     private WALLET_ADDRESS = process.env.WALLET_ADDRESS as `0x${string}`;
+
+    getUSDC(chain: string) {
+        switch (chain) {
+            case 'sepolia':
+                return "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238" as `0x${string}`
+            case 'avalanche':
+                return "0x5425890298aed601595a70AB815c96711a31Bc65" as `0x${string}`
+            case 'arbitrum':
+                return "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" as `0x${string}`
+            case 'base':
+                return "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as `0x${string}`
+            case 'linea':
+                return "0xFEce4462D57bD51A6A552365A011b95f0E16d9B7" as `0x${string}`
+            default:
+                throw new Error(`Unsupported chain: ${chain}`)
+        }
+    }
 
 
     public async getWalletAddress(): Promise<any> {
@@ -19,11 +36,6 @@ export class WalletService {
         }
     }
 
-    /**
-     * İşlemin geçerli olup olmadığını kontrol eder
-     * @param transactionRequest İşlem bilgileri
-     * @returns {Promise<boolean>} İşlemin geçerliliği
-     */
     async executeTransaction(transactionRequest: TransactionRequest): Promise<any> {
         try {
             // Cüzdan adresi doğrulama
@@ -119,18 +131,10 @@ export class WalletService {
         }
     }
 
-    /**
-     * Cüzdan adresinin geçerli olup olmadığını kontrol eder
-     * @param walletAddress Kontrol edilecek cüzdan adresi
-     * @returns {boolean} Adresin geçerliliği
-     */
     isWalletAddressValid(walletAddress: string): boolean {
         return /^0x[a-fA-F0-9]{40}$/.test(walletAddress);
     }
 
-    /**
-     * USDC token için ABI tanımı
-     */
     private usdcAbi = [
         {
             name: 'transfer',
@@ -158,45 +162,54 @@ export class WalletService {
         }
     ] as const;
 
-    /**
-     * Belirtilen adrese USDC gönderir (Sepolia testnet üzerinde)
-     * @param {string} toAddress Alıcı Ethereum adresi
-     * @param {number} amount Gönderilecek USDC miktarı
-     * @returns {Promise<`0x${string}`>} İşlem hash'i
-     * @throws {Error} Geçersiz cüzdan adresi veya işlem hatası durumunda
-     */
     async send(
         toAddress: string,
-        amount: number
+        amount: number,
+        chain: string
     ): Promise<`0x${string}`> {
         try {
             // Cüzdan adresi doğrulama
             if (!this.isWalletAddressValid(toAddress)) {
                 throw new Error('Geçersiz cüzdan adresi formatı');
             }
-
-            // USDC kontrat adresi (Sepolia)
-            const usdcAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as `0x${string}`;
             
             // Hesabı oluştur
             const account = privateKeyToAccount(this.PRIVATE_KEY);
+
+            let clientChain: Chain
+            switch (chain) {
+                case 'sepolia':
+                    clientChain = sepolia
+                    break
+                case 'avalanche':
+                    clientChain = avalancheFuji
+                    break
+                case 'arbitrum':
+                    clientChain = arbitrumSepolia
+                    break
+                case 'base':
+                    clientChain = baseSepolia
+                    break
+                case 'linea':
+                    clientChain = lineaSepolia
+                    break       
+                default:
+                    throw new Error(`Unsupported chain: ${chain}`)
+            }
             
-            // Public client oluştur
             const publicClient = createPublicClient({
-                chain: sepolia,
+                chain: clientChain,
                 transport: http()
             });
             
-            // Wallet client oluştur
             const walletClient = createWalletClient({
                 account,
-                chain: sepolia,
+                chain: clientChain,
                 transport: http()
             });
             
-            // USDC kontratı oluştur
             const contract = getContract({
-                address: usdcAddress,
+                address: this.getUSDC(chain),
                 abi: this.usdcAbi,
                 client: { public: publicClient, wallet: walletClient }
             });
@@ -209,11 +222,25 @@ export class WalletService {
             
             console.log(`${amount} USDC gönderiliyor: ${account.address} adresinden ${toAddress} adresine`);
             
+            // Nonce değerini al
+            const nonce = await publicClient.getTransactionCount({
+                address: account.address,
+            });
+            
+            // Gas fiyatını hesapla (mevcut fiyatın %20 üzerine çıkar)
+            const gasPrice = await publicClient.getGasPrice();
+            const increasedGasPrice = gasPrice * BigInt(120) / BigInt(100); // %20 artış
+            
             // USDC transfer işlemini gerçekleştir
-            const hash = await contract.write.transfer([
-                toAddress as `0x${string}`,
-                amountInWei
-            ]);
+            const hash = await contract.write.transfer(
+                [toAddress as `0x${string}`, amountInWei],
+                {
+                    nonce: nonce,
+                    gasPrice: increasedGasPrice,
+                    maxPriorityFeePerGas: undefined, // Type-2 işlemleri için uyumluluk
+                    maxFeePerGas: undefined,        // Type-2 işlemleri için uyumluluk
+                }
+            );
             
             return hash;
         } catch (error) {

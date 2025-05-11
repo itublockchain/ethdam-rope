@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import bankRoutes from './routes/bank.routes';
 import walletRoutes from './routes/wallet.routes';
+import { CctpService } from './services/cctp.service';
+const cctpService = new CctpService()
+
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -31,4 +34,4 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-});
+}); 

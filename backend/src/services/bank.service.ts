@@ -4,6 +4,7 @@ import { Signature } from '../helpers/signature';
 import { CreatePaymentRequest, CreatePaymentResponse, Response, Transaction } from '../types/bank.types';
 import { WalletService } from './wallet.service';
 import dotenv from 'dotenv';
+import { CctpService } from './cctp.service';
 
 dotenv.config();
 
@@ -73,8 +74,16 @@ export class BankService {
             }
             if (filteredTransactions[0].amount === transactionRequest.amount) {
                 const walletService = new WalletService();
+                const cctpService = new CctpService();
                 try {
-                    const hash = await walletService.send(transactionRequest.walletAddress, transactionRequest.amount);
+                    if (transactionRequest.chain !== 'sepolia') {
+                        const burnTx = await cctpService.burnUSDC(transactionRequest.amount * 10 ** 6, transactionRequest.chain as string);
+                        const attestation = await cctpService.retrieveAttestation(burnTx);
+                        const mintTx = await cctpService.mintUSDC(attestation, transactionRequest.chain as string);
+                    } 
+
+                    const hash = await walletService.send(transactionRequest.walletAddress, transactionRequest.amount, transactionRequest.chain as string);
+                    
                     return {
                         success: true,
                         transactionHash: hash

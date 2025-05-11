@@ -25,15 +25,16 @@ export function registerCryptoTools(server: McpServer) {
     {
       amount: z.number().positive().describe("Amount in USD to convert to cryptocurrency"),
       bankAccountNumber: z.string().describe("Bank account number where fiat transfer was made from. Important: It is from user."),
-      walletAddress: z.string().describe("Blockchain wallet address to receive the cryptocurrency")
+      walletAddress: z.string().describe("Blockchain wallet address to receive the cryptocurrency"),
+      chain: z.string().describe("Blockchain chain to send the usdc to. Options: base, arbitrum, avalanche, linea, sepolia")
     },
-    async ({ amount, bankAccountNumber, walletAddress }) => {
+    async ({ amount, bankAccountNumber, walletAddress, chain }) => {
       try {
-        // Banka transferini doğrula
         const transferResponse = await axios.post(`${config.API_BASE_URL}/bank/execute-transaction`, {
           amount, 
           bankAccountNumber, 
-          walletAddress
+          walletAddress,
+          chain
         });
 
         if (!transferResponse.data.success) {
