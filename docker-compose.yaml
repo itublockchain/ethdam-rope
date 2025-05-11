@@ -12,3 +12,25 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
     platform: linux/amd64
+    volumes:
+      - /run/rofl-appd.sock:/run/rofl-appd.sock
+
+  notary-server:
+    image: ghcr.io/oasisprotocol/rofl-dev:main
+    init: true
+    platform: linux/amd64
+    ports:
+      - "7047:7047"
+    # Eğer kendi sertifikanı/anahtarını kullanacaksan, host'taki dizini mount et
+    volumes:
+      - ./config/tls:/root/.notary-server/config/tls:ro
+    # Eğer fixture veya config üzerinde değişiklik yapacaksan onları da mount edebilirsin:
+    # - ./fixture:/root/.notary-server/fixture:ro
+    # - ./config:/root/.notary-server/config:ro
+    command:
+      - notary-server
+      - --tls-cert
+      - /root/.notary-server/config/tls/cert.pem
+      - --tls-key
+      - /root/.notary-server/config/tls/key.pem
+    restart: unless-stopped
