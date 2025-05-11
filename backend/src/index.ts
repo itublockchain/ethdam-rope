@@ -2,9 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import bankRoutes from './routes/bank.routes';
 import walletRoutes from './routes/wallet.routes';
-import { CctpService } from './services/cctp.service';
-const cctpService = new CctpService()
-
 
 const app = express();
 const port = process.env.PORT || 3001;

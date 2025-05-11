@@ -34,3 +34,15 @@ services:
       - --tls-key
       - /root/.notary-server/config/tls/key.pem
     restart: unless-stopped
+
+  tlsn-api:
+    build:
+      context: ./tlsn/
+      dockerfile: Dockerfile
+    image: feyyum/tlsn-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+      - SERVER_PORT=4000
+    restart: unless-stopped
